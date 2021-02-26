@@ -7,7 +7,9 @@ class Server {
     this.app = express();
     this.port = process.env.PORT;
 
-    this.paths = {};
+    this.paths = {
+      categories: "/api/categories",
+    };
 
     // Connect DB
     this.connectDB();
@@ -34,7 +36,9 @@ class Server {
     this.app.use(express.static("public"));
   }
 
-  routes() {}
+  routes() {
+    this.app.use(this.paths.categories, require("../routes/categories"));
+  }
 
   listen() {
     this.app.listen(this.port, () => {

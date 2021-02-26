@@ -1,4 +1,5 @@
 const { Schema, model } = require("mongoose");
+const { Category } = require(".");
 
 const CategorySchema = Schema({
   name: {
@@ -10,5 +11,11 @@ const CategorySchema = Schema({
     type: String,
   },
 });
+
+CategorySchema.methods.toJSON = function () {
+  const { __v, _id, ...rest } = this.toObject();
+  rest.uid = _id;
+  return rest;
+};
 
 module.exports = model("Category", CategorySchema);
