@@ -1,6 +1,6 @@
 const express = require("express");
 const cors = require("cors");
-const { dbConnection } = require("../database/config");
+const sequelize = require("../database/config");
 
 class Server {
   constructor() {
@@ -22,7 +22,12 @@ class Server {
   }
 
   async connectDB() {
-    await dbConnection();
+    try {
+      await sequelize.sync({ force: false });
+      console.log("Postgresql database online");
+    } catch (error) {
+      console.log(error);
+    }
   }
 
   middlewares() {

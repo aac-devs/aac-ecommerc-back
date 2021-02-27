@@ -1,25 +1,20 @@
 const { Model, DataTypes } = require("sequelize");
 const sequelize = require("../database/config");
 
-class Category extends Model {}
+class Image extends Model {}
 
-Category.init(
+Image.init(
   {
-    name: {
+    url: {
       type: DataTypes.STRING,
       allowNull: false,
-      unique: true,
-    },
-    description: {
-      type: DataTypes.STRING,
-      allowNull: true,
     },
   },
   {
     sequelize,
-    modelName: "category",
+    modelName: "image",
     timestamps: false,
   }
 );
 
-module.exports = Category;
+module.exports = Image;

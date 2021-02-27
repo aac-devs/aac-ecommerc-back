@@ -1,9 +1,11 @@
 const Server = require("./server");
-const Product = require("./product");
 const Category = require("./category");
+const Product = require("./product");
+const Image = require("./image");
 
 module.exports = {
   Server,
-  Product,
   Category,
+  Product,
+  Image,
 };

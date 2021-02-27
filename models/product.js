@@ -1,31 +1,33 @@
-const { Schema, model } = require("mongoose");
+const { Model, DataTypes } = require("sequelize");
+const sequelize = require("../database/config");
 
-const ProductSchema = Schema({
-  name: {
-    type: String,
-    required: [true, "[DB] Name is required"],
-    unique: true,
-  },
-  description: {
-    type: String,
-  },
-  price: {
-    type: Number,
-    default: 0,
-    required: true,
-  },
-  stock: {
-    type: Number,
-    default: 0,
-  },
-  category: {
-    type: Schema.Types.ObjectId,
-    ref: "Category",
-    required: true,
-  },
-  image: {
-    type: String,
-  },
-});
+class Product extends Model {}
 
-module.exports = model("Product", ProductSchema);
+Product.init(
+  {
+    name: {
+      type: DataTypes.STRING,
+      allowNull: false,
+      unique: true,
+    },
+    description: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    price: {
+      type: DataTypes.REAL,
+      allowNull: false,
+    },
+    stock: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+    },
+  },
+  {
+    sequelize,
+    modelName: "product",
+    timestamps: false,
+  }
+);
+
+module.exports = Product;
