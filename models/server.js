@@ -8,7 +8,7 @@ class Server {
     this.port = process.env.PORT;
 
     this.paths = {
-      categories: "/api/categories",
+      categories: "/products/category",
     };
 
     // Connect DB
