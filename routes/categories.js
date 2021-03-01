@@ -7,8 +7,8 @@ const {
   deleteCategory,
 } = require("../controllers/categories");
 
-const { existCategoryById } = require("../helpers/db-validators");
-const { validateFields } = require("../middlewares/validate-fields");
+// const { existCategoryById } = require("../helpers/db-validators");
+// const { validateFields } = require("../middlewares/validate-fields");
 
 const router = Router();
 
@@ -16,24 +16,24 @@ router.get("/", getAllCategories);
 
 router.post(
   "/",
-  [check("name", "Name is required").not().isEmpty(), validateFields],
+  // [check("name", "Name is required").not().isEmpty(), validateFields],
   createCategory
 );
 
 router.put(
   "/:id",
-  [
-    check("name", "Name is required").not().isEmpty(),
-    validateFields,
-    check("id").custom(existCategoryById),
-    validateFields,
-  ],
+  // [
+  //   check("name", "Name is required").not().isEmpty(),
+  //   validateFields,
+  //   check("id").custom(existCategoryById),
+  //   validateFields,
+  // ],
   updateCategory
 );
 
 router.delete(
   "/:id",
-  [check("id").custom(existCategoryById), validateFields],
+  // [check("id").custom(existCategoryById), validateFields],
   deleteCategory
 );
 

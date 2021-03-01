@@ -1,5 +1,5 @@
 const { response } = require("express");
-const Category = require("../models/category");
+// const Category = require("../models/category");
 
 const getAllCategories = async (req, res = response) => {
   const { limit = 5, offset = 0 } = req.query;

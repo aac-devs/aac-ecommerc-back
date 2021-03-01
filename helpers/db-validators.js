@@ -1,5 +1,6 @@
-const { Category } = require("../models");
+// const { Category } = require("../models");
 
+/*
 const existCategoryById = async (id) => {
   const exists = await Category.findByPk(id);
   if (!exists) {
@@ -10,3 +11,4 @@ const existCategoryById = async (id) => {
 module.exports = {
   existCategoryById,
 };
+*/
