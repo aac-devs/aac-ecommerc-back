@@ -1,8 +1,6 @@
 const express = require("express");
 const cors = require("cors");
-// const { sequelize } = require("../database/config");
 const { sequelize } = require("./db/models/index");
-// require("../database/associations");
 
 class Server {
   constructor() {
@@ -45,8 +43,8 @@ class Server {
   }
 
   routes() {
-    this.app.use(this.paths.categories, require("./routes/categories"));
-    this.app.use(this.paths.products, require("./routes/products"));
+    this.app.use(this.paths.categories, require("./routes/category.routes"));
+    this.app.use(this.paths.products, require("./routes/product.routes"));
   }
 
   listen() {

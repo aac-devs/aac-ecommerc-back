@@ -53,7 +53,7 @@ const createProducts = async (totalProducts, imagesXproduct) => {
         name: faker.commerce.productName().toUpperCase(),
         description: faker.commerce.productDescription(),
         price: faker.commerce.price(),
-        stock: faker.finance.account(),
+        stock: faker.random.number(),
       });
       // Se realiza la relación: Al producto creado se le agregan las imágenes creadas
       await product.addImages(arrayImages);
@@ -103,6 +103,8 @@ module.exports = {
   },
 
   down: async (queryInterface, Sequelize) => {
-    await queryInterface.bulkDelete("Categories", null, {});
+    await queryInterface.bulkDelete("categories", null, {});
+    await queryInterface.bulkDelete("products", null, {});
+    await queryInterface.bulkDelete("images", null, {});
   },
 };
