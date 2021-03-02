@@ -93,7 +93,7 @@ module.exports = {
     }
   },
 
-  delete: async (req = request, res = response) => {
+  remove: async (req = request, res = response) => {
     try {
       const { id } = req.params;
       await Category.destroy({ where: { id } });

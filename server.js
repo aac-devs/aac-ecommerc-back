@@ -1,6 +1,7 @@
 const express = require("express");
 const cors = require("cors");
 const { sequelize } = require("./db/models/index");
+const fileUpload = require("express-fileupload");
 
 class Server {
   constructor() {
@@ -40,6 +41,14 @@ class Server {
 
     // Public folder
     this.app.use(express.static("public"));
+
+    // Fileupload - Carga de archivos
+    this.app.use(
+      fileUpload({
+        useTempFiles: true,
+        tempFileDir: "/tmp/",
+      })
+    );
   }
 
   routes() {

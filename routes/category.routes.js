@@ -8,13 +8,15 @@ const categoryController = require("../controllers/category.controller");
 
 const router = Router();
 
-router.get("/", categoryController.getAll);
-router.get("/:name", categoryController.getProducts);
+const { getAll, getProducts, create, update, remove } = categoryController;
+
+router.get("/", getAll);
+router.get("/:name", getProducts);
 
 router.post(
   "/",
   [check("name", "Name is reqsuired").not().isEmpty(), validateFields],
-  categoryController.create
+  create
 );
 
 router.put(
@@ -24,13 +26,13 @@ router.put(
     check("id").custom(existCategoryById),
     validateFields,
   ],
-  categoryController.update
+  update
 );
 
 router.delete(
   "/:id",
   [check("id").custom(existCategoryById), validateFields],
-  categoryController.delete
+  remove
 );
 
 module.exports = router;
