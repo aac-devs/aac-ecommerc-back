@@ -1,8 +1,11 @@
 const { request, response } = require("express");
-const { Product, Category } = require("../db/models/index");
-
-const cloudinary = require("cloudinary").v2;
-cloudinary.config(process.env.CLOUDINARY_URL);
+const { Product, Category, Image } = require("../db/models/index");
+const {
+  createImages,
+  readCategory,
+  readCategories,
+} = require("../helpers/db-helpers");
+const filesManage = require("../helpers/files-manage");
 
 module.exports = {
   getAll: async (req = request, res = response) => {
@@ -14,7 +17,11 @@ module.exports = {
         include: [
           {
             model: Category,
-            attributes: ["id", "name"],
+            attributes: ["name"],
+          },
+          {
+            model: Image,
+            attributes: ["url"],
           },
         ],
       });
@@ -39,6 +46,10 @@ module.exports = {
             model: Category,
             attributes: ["id", "name"],
           },
+          {
+            model: Image,
+            attributes: ["url"],
+          },
         ],
       });
       res.json(product);
@@ -54,86 +65,99 @@ module.exports = {
     const { name: n, description: d, price, stock, categoryIds } = req.body;
     const name = n.toUpperCase();
     const description = d ? d : "No description";
-    const productFind = await Product.findOne({
-      where: {
+
+    let ids = categoryIds
+      .replace("[", "")
+      .replace("]", "")
+      .split(",")
+      .map((a) => a * 1);
+
+    let files = [...req.filesValidate];
+
+    const resultsImages = await Promise.all(
+      files.map((file) => filesManage.uploadFile(file))
+    );
+    const resultsCategories = await Promise.all(
+      ids.map((id) => readCategory(id))
+    );
+    const urlImages = resultsImages.map((img) => ({
+      url: img.secure_url,
+    }));
+
+    const product = await Product.create(
+      {
         name,
+        description,
+        price,
+        stock,
+        Images: urlImages,
       },
+      {
+        include: {
+          model: Image,
+        },
+      }
+    );
+
+    await product.setCategories(resultsCategories);
+    const newProd = await Product.findOne({
+      where: {
+        id: product.id,
+      },
+      include: [
+        {
+          model: Category,
+          attributes: ["id", "name"],
+        },
+        {
+          model: Image,
+          attributes: ["url"],
+        },
+      ],
     });
-    if (productFind) {
-      return res.status(400).json({
-        msg: `Product '${productFind.name}' already exist in database!`,
-      });
-    }
 
-    return res.json({
-      msg: "hasta aquí",
-      name,
-      description,
-      price,
-      stock,
-      categoryIds,
+    console.log(urlImages);
+    console.log(resultsCategories);
+    res.json({
+      newProd,
     });
+    // .then((cloudUrls) => {
+    //   // console.log(value);
+    //   console.log(cloudUrls);
 
-    let files = [];
-    const aux = req.files?.files || req.files || [];
-    aux instanceof Array ? (files = aux) : files.push(aux);
-
-    // TODO: Validar extensiones permitidas:
-
-    // TODO: Limpiar imágenes previas, solo para update, no create:
-
-    const prom = (file) => {
-      return new Promise((resolve, reject) => {
-        const url = cloudinary.uploader.upload(file.tempFilePath);
-        resolve(url);
-        reject("");
-      });
-    };
-
-    Promise.all(files.map((file) => prom(file)))
-      .then((resp) => {
-        const urls = resp.map((r) => r.secure_url);
-        console.log(urls);
-        res.json({
-          respuesta: "ok",
-          urls,
-        });
-      })
-      .catch((err) => {
-        res.json("no ok");
-      });
-
-    // try {
-
-    // const secure_urls = files.map((file) => {
-    //   console.log(file);
-    // });
-
-    // const name = req.body.name.toUpperCase();
-    // const description = req.body.description
-    //   ? req.body.description
-    //   : "No description";
-    // const categoryFind = await Category.findOne({
-    //   where: {
-    //     name,
-    //   },
-    // });
-    // if (categoryFind) {
-    //   return res.status(400).json({
-    //     msg: `Category ${categoryFind.name} already exist in database!`,
+    //   const imageUrls = cloudUrls.map((url) => ({
+    //     url: url.secure_url,
+    //   }));
+    //   return imageUrls;
+    // })
+    // .then(async (urls) => {
+    //   const product = await Product.create(
+    //     {
+    //       name,
+    //       description,
+    //       price,
+    //       stock,
+    //       Images: urls,
+    //     },
+    //     {
+    //       include: {
+    //         model: Image,
+    //       },
+    //     }
+    //   );
+    //   res.json({
+    //     respuesta: "ok",
+    //     product,
     //   });
-    // }
-    // const categorySaved = await Category.create({
-    //   name,
-    //   description,
-    // });
-    //   res.json("ok");
-    // } catch (error) {
+    // })
+    // .catch((error) => {
+    //   console.log(error);
     //   res.status(500).json({
-    //     msg: "Something went wrong trying to access to database!",
+    //     msg:
+    //       "Something went wrong trying to access to database! - create product",
     //     error,
     //   });
-    // }
+    // });
   },
 
   update: async (req = request, res = response) => {

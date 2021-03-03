@@ -35,7 +35,7 @@ module.exports = {
       res.json(products);
     } catch (error) {
       res.status(500).json({
-        msg: "Something went wrong trying to access to database!",
+        msg: "Something went wrong trying to access to database! - controller",
         error,
       });
     }

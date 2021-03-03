@@ -1,13 +1,9 @@
 const { Router } = require("express");
 const { check } = require("express-validator");
 const productController = require("../controllers/product.controller");
+const customValidations = require("../helpers/custom-validations");
+const fileExtensionsValidator = require("../middlewares/file-extensions-validator");
 
-const {
-  existCategoryById,
-  isInteger,
-  isPositive,
-  isNumber,
-} = require("../helpers/db-validators");
 const { validateFields } = require("../middlewares/validate-fields");
 
 const router = Router();
@@ -26,7 +22,7 @@ router.get("/", getAll);
 
 router.get(
   "/:id",
-  [check("id").custom(existCategoryById), validateFields],
+  [check("id").custom(customValidations.existProductId), validateFields],
   getOne
 );
 
@@ -34,14 +30,13 @@ router.post(
   "/",
   [
     check("name", "Name is required!").not().isEmpty(),
+    check("name").custom(customValidations.existProductName),
     check("price", "Price is required!").not().isEmpty(),
-    check("description").custom(isNumber),
-    // check("price").custom(isNumber),
-    // check("id").custom(existCategoryById),
-    // check("price").custom(isPositive),
-    // check("stock", "Stock is required!").not().isEmpty(),
-    // check("stock").custom(isInteger),
-    // check("stock").custom(isPositive),
+    check("stock", "Stock is required!").not().isEmpty(),
+    validateFields,
+    check("stock").custom(customValidations.isInteger),
+    check("price").custom(customValidations.isReal),
+    fileExtensionsValidator.isAllowExtension,
     validateFields,
   ],
   create
