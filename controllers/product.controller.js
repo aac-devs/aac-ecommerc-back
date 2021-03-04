@@ -1,9 +1,11 @@
 const { request, response } = require("express");
 const { Product, Category, Image } = require("../db/models/index");
 const {
-  createImages,
-  readCategory,
-  readCategories,
+  // createImages,
+  // readCategory,
+  addCategoriesToProduct,
+  getProductById,
+  // readCategories,
 } = require("../helpers/db-helpers");
 const filesManage = require("../helpers/files-manage");
 
@@ -15,14 +17,8 @@ module.exports = {
         offset,
         limit,
         include: [
-          {
-            model: Category,
-            attributes: ["name"],
-          },
-          {
-            model: Image,
-            attributes: ["url"],
-          },
+          { model: Category, attributes: ["name"] },
+          { model: Image, attributes: ["url"] },
         ],
       });
       res.json(products);
@@ -37,21 +33,7 @@ module.exports = {
   getOne: async (req = request, res = response) => {
     try {
       const { id } = req.params;
-      const product = await Product.findOne({
-        where: {
-          id,
-        },
-        include: [
-          {
-            model: Category,
-            attributes: ["id", "name"],
-          },
-          {
-            model: Image,
-            attributes: ["url"],
-          },
-        ],
-      });
+      const product = await getProductById(id);
       res.json(product);
     } catch (error) {
       res.status(500).json({
@@ -62,122 +44,175 @@ module.exports = {
   },
 
   create: async (req = request, res = response) => {
-    const { name: n, description: d, price, stock, categoryIds } = req.body;
-    const name = n.toUpperCase();
-    const description = d ? d : "No description";
+    try {
+      const { name: n, description: d, price, stock, categoryIds } = req.body;
+      const name = n.toUpperCase();
+      const description = d ? d : "No description";
 
-    let ids = categoryIds
-      .replace("[", "")
-      .replace("]", "")
-      .split(",")
-      .map((a) => a * 1);
+      // Se leen las imágenes que ya pasaron la validación de la extensión.
+      let files = [...req.filesValidate];
+      // console.log(files);
+      // Se envían todas las imágenes a Cloudinary.
+      const resultsImages = await Promise.all(
+        files.map((file) => filesManage.uploadFile(file))
+      );
+      // Se leen las urls devueltas desde Cloudinary para agregarlas en la tabla Image y relacionarla con Product.
+      const urlImages = resultsImages.map((img) => ({
+        url: img.secure_url,
+      }));
+      // Se crea el producto con las urls de la imágenes guardadas.
+      const product = await Product.create(
+        { name, description, price, stock, Images: urlImages },
+        { include: { model: Image } }
+      );
+      // Se relaciona el producto con las categorías que llegan en el body
+      const msg = await addCategoriesToProduct(product, categoryIds);
+      // Se lee el producto creado en la base de datos, de modo que incluya las imágenes y categoría relacionadas.
+      const newProd = await getProductById(id);
+      res.json({
+        message: msg,
+        "product info": newProd,
+      });
+    } catch (error) {
+      res.status(500).json({
+        msg: "Something went wrong trying to access to database!",
+        error,
+      });
+    }
+  },
 
-    let files = [...req.filesValidate];
-
-    const resultsImages = await Promise.all(
-      files.map((file) => filesManage.uploadFile(file))
-    );
-    const resultsCategories = await Promise.all(
-      ids.map((id) => readCategory(id))
-    );
-    const urlImages = resultsImages.map((img) => ({
-      url: img.secure_url,
-    }));
-
-    const product = await Product.create(
-      {
+  update: async (req = request, res = response) => {
+    try {
+      const { id } = req.params;
+      const { name: n, description: d, price, stock, categoryIds } = req.body;
+      const name = n.toUpperCase();
+      const description = d ? d : "No description";
+      // Borra las imágenes de Cloudinary y de la tabla Image
+      await filesManage.deleteImages(id);
+      const product = await Product.findByPk(id);
+      // Elimina la relación del producto con las categorías
+      await product.setCategories([]);
+      // Se leen las imágenes que ya pasaron la validación de la extensión.
+      let files = [...req.filesValidate];
+      // Se envían todas las imágenes a Cloudinary.
+      const resultsImages = await Promise.all(
+        files.map((file) => filesManage.uploadFile(file))
+      );
+      // Se leen las urls devueltas desde Cloudinary para agregarlas en la tabla Image y relacionarla con Product.
+      const newImages = await Promise.all(
+        resultsImages.map(
+          async (img) =>
+            await Image.create({
+              url: img.secure_url,
+            })
+        )
+      );
+      // Se crea el producto con las urls de la imágenes guardadas.
+      const productUpdated = await product.update({
         name,
         description,
         price,
         stock,
-        Images: urlImages,
-      },
-      {
-        include: {
-          model: Image,
-        },
-      }
-    );
-
-    await product.setCategories(resultsCategories);
-    const newProd = await Product.findOne({
-      where: {
-        id: product.id,
-      },
-      include: [
-        {
-          model: Category,
-          attributes: ["id", "name"],
-        },
-        {
-          model: Image,
-          attributes: ["url"],
-        },
-      ],
-    });
-
-    console.log(urlImages);
-    console.log(resultsCategories);
-    res.json({
-      newProd,
-    });
-    // .then((cloudUrls) => {
-    //   // console.log(value);
-    //   console.log(cloudUrls);
-
-    //   const imageUrls = cloudUrls.map((url) => ({
-    //     url: url.secure_url,
-    //   }));
-    //   return imageUrls;
-    // })
-    // .then(async (urls) => {
-    //   const product = await Product.create(
-    //     {
-    //       name,
-    //       description,
-    //       price,
-    //       stock,
-    //       Images: urls,
-    //     },
-    //     {
-    //       include: {
-    //         model: Image,
-    //       },
-    //     }
-    //   );
-    //   res.json({
-    //     respuesta: "ok",
-    //     product,
-    //   });
-    // })
-    // .catch((error) => {
-    //   console.log(error);
-    //   res.status(500).json({
-    //     msg:
-    //       "Something went wrong trying to access to database! - create product",
-    //     error,
-    //   });
-    // });
-  },
-
-  update: async (req = request, res = response) => {
-    // TODO: Validar que no exista el nombre en la base de datos, solo para create:
-
-    // TODO: Validar extensiones permitidas:
-
-    // TODO: Limpiar imágenes previas, solo para update, no create:
-    res.json("productController.update");
+      });
+      await productUpdated.addImages(newImages);
+      // Se relaciona el producto con las categorías que llegan en el body
+      const msg = await addCategoriesToProduct(productUpdated, categoryIds);
+      // Se lee el producto creado en la base de datos, de modo que incluya las imágenes y categoría relacionadas.
+      const newProd = await getProductById(id);
+      res.json({
+        message: msg,
+        "product info": newProd,
+      });
+    } catch (error) {
+      res.status(500).json({
+        msg: "Something went wrong trying to access to database!",
+        error,
+      });
+    }
   },
 
   remove: async (req = request, res = response) => {
-    res.json("productController.remove");
+    try {
+      const { id } = req.params;
+      await filesManage.deleteImages(id);
+      await Product.destroy({
+        where: {
+          id,
+        },
+      });
+      res.json({
+        msg: "Product deleted successfully",
+      });
+    } catch (error) {
+      res.status(500).json({
+        msg: "Something went wrong trying to access to database!",
+        error,
+      });
+    }
   },
 
   categoryAdd: async (req = request, res = response) => {
-    res.json("productController.categoryAdd");
+    try {
+      const { idProduct, idCategory } = req.params;
+      const product = await Product.findOne({
+        where: {
+          id: idProduct,
+        },
+      });
+      const category = await Category.findOne({
+        where: {
+          id: idCategory,
+        },
+      });
+      const resp = await product.addCategory(category);
+
+      if (!resp) {
+        res.json({
+          msg: "The relationship you are trying to create already exists",
+        });
+      } else {
+        res.json({ rel: resp[0] });
+      }
+    } catch (error) {
+      res.status(500).json({
+        msg: "Something went wrong trying to access to database!",
+        error,
+      });
+    }
   },
 
   categoryRemove: async (req = request, res = response) => {
-    res.json("productController.categoryRemove");
+    try {
+      const { idProduct, idCategory } = req.params;
+      const product = await Product.findOne({
+        where: {
+          id: idProduct,
+        },
+        include: [
+          {
+            model: Category,
+            attributes: ["id", "name"],
+          },
+        ],
+      });
+      const categories = product.Categories.filter(
+        (cat) => cat.id.toString() !== idCategory
+      );
+      const resp = await product.setCategories(categories);
+      if (resp.length > 0) {
+        res.json({
+          msg: "Relationship removed succesfully",
+        });
+      } else {
+        res.json({
+          msg: `The relationship you are trying to remove doesn't exists`,
+        });
+      }
+    } catch (error) {
+      res.status(500).json({
+        msg: "Something went wrong trying to access to database!",
+        error,
+      });
+    }
   },
 };

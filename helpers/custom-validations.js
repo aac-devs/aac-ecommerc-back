@@ -14,7 +14,7 @@ module.exports = {
       throw new Error(`Product Id doesn't exist in database!`);
     }
   },
-  existProductName: async (name) => {
+  existProductName: async (name = "") => {
     name = name.toUpperCase();
     const exist = await Product.findOne({
       where: {

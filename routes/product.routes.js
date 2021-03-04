@@ -44,25 +44,44 @@ router.post(
 
 router.put(
   "/:id",
+  [
+    check("id").custom(customValidations.existProductId),
+    check("name", "Name is required!").not().isEmpty(),
+    check("price", "Price is required!").not().isEmpty(),
+    check("stock", "Stock is required!").not().isEmpty(),
+    validateFields,
+    check("stock").custom(customValidations.isInteger),
+    check("price").custom(customValidations.isReal),
+    fileExtensionsValidator.isAllowExtension,
+    validateFields,
+  ],
   update
-  // [
-  //   check("name", "Name is required").not().isEmpty(),
-  //   validateFields,
-  //   check("id").custom(existCategoryById),
-  //   validateFields,
-  // ],
-  // updateProduct
 );
 
 router.delete(
   "/:id",
+  [check("id").custom(customValidations.existProductId), validateFields],
   remove
-  // [check("id").custom(existCategoryById), validateFields],
-  // deleteProduct
 );
 
-router.post("/:idProduct/category/:idCategory", categoryAdd);
+router.post(
+  "/:idProduct/category/:idCategory",
+  [
+    check("idProduct").custom(customValidations.existProductId),
+    check("idCategory").custom(customValidations.existCategoryId),
+    validateFields,
+  ],
+  categoryAdd
+);
 
-router.delete("/:idProduct/category/:idCategory", categoryRemove);
+router.delete(
+  "/:idProduct/category/:idCategory",
+  [
+    check("idProduct").custom(customValidations.existProductId),
+    check("idCategory").custom(customValidations.existCategoryId),
+    validateFields,
+  ],
+  categoryRemove
+);
 
 module.exports = router;
